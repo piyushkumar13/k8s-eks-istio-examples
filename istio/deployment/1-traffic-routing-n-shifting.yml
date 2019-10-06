@@ -1,0 +1,192 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: piyush-poc
+#  labels:
+#    istio-injection: enabled
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-deployment-v1
+  namespace: piyush-poc
+  labels:
+    app: myapp-deployment
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp-pod
+      version: v1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      name: myapp-pod-v1
+      labels:
+        app: myapp-pod
+        version: v1
+    spec:
+      containers:
+      - name: myapp-container-v1
+        image: piyushkumar13/pluralsight-docker-ci:edge # outputs with Kubesighter header
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-deployment-v2
+  namespace: piyush-poc
+  labels:
+    app: myapp-deployment
+    version: v2
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp-pod
+      version: v2
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      name: myapp-pod
+      labels:
+        app: myapp-pod
+        version: v2
+    spec:
+      containers:
+      - name: myapp-container-v2
+        image: piyushkumar13/pluralsight-docker-ci:latest # outputs with pluralsighter header
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myappservice
+  namespace: piyush-poc
+  labels:
+    forapp: myapp
+    service: myappservice
+spec:
+  selector:
+    app: myapp-pod
+  type: NodePort
+  ports:
+    - name: http-myapp
+      port: 9999
+      targetPort: 8080
+      nodePort: 31111
+---
+# Gateway selects which ingress-controller to use which will act as the starting point for the request which will get loadbalanced
+# according to the virtualservice and destination rules.
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: myapp-gateway
+  namespace: piyush-poc
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+#---
+## Virtual service defines the routing rules. It is the counterpart to ingress in K8s.
+## The below one is the basic loadbalanacer routing. It will route in roundrobin fashion.
+#apiVersion: networking.istio.io/v1alpha3
+#kind: VirtualService
+#metadata:
+#  name: myapp-vservice
+#  namespace: piyush-poc
+#spec:
+#  hosts:
+#  - "*"
+#  gateways:
+#  - myapp-gateway
+#  http:
+#  - name: "myapp-routes"
+#    match:
+#    - uri:
+#        exact: /myapp
+#    rewrite:
+#      uri: /
+#    route:
+#    - destination:
+#        host: myappservice # Use fully qualified name of the destionation service if its in different namespace as that of this VirtualService.
+#        port:
+#          number: 9999
+---
+# Following Virtual service will route traffic based on weights.
+# Note : for the below virtual service "subset" is required. The subset is defined by the destination rules.
+# Hence, for below one to work, you need destionation-rules
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: myapp-vservice
+  namespace: piyush-poc
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - myapp-gateway
+  http:
+  - name: "myapp-routes"
+    match:
+    - uri:
+        exact: /myapp
+    rewrite: # Actual request that will go to the underlying application will strip the /myapp path
+      uri: /
+    route:
+    - destination:
+        host: myappservice
+        subset: v1 # Kubesighter
+        port:
+          number: 9999
+      weight: 0
+    - destination:
+        host: myappservice
+        subset: v2 # Pluralsighter
+        port:
+          number: 9999
+      weight: 100
+#    fault: # We can inject faults for testing purposes. This injected fault is abort similarly we can have for delay. Refer this : https://istio.io/docs/tasks/traffic-management/fault-injection/
+#      abort:
+#        httpStatus: 400
+#        percent: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: myapp-dr
+  namespace: piyush-poc
+spec:
+  host: myappservice
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1
+    labels:
+      version: v1
+
+  - name: v2
+    labels:
+      version: v2
+

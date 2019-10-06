@@ -1,0 +1,42 @@
+---
+# This ingress uses the nginx-controller. Please make sure to deploy nginx-controller before creating
+# this ingress. You can deploy the alb-ingress-controller by running yaml files in examples/ingress-controllers/nginx-ingress-controller.
+# Ex - kubectl apply -f <path>/examples/ingress-controllers/nginx-ingress-controller/
+
+# Nginx controller ingresses have all the features of proxy_pass and reverse_proxy. For more details, you can refer this :
+# https://kubernetes.github.io/ingress-nginx/user-guide/nginx-configuration/annotations/
+
+# However, we will be using Nginx controller in combination with ALB Controller because of the following reason :
+# 1. We want only one ALB for the services. So, nginx controller will be exposed as the NodePort service and this service will
+# be defined in alb ingress. You can refer file examples/ingress/fanout-hybrid-ingress.yaml.
+# 2. Now, you will say why not expose nginx controller as a LoadBalancer service type instead of NodePort ? This way we can avoid
+# creation of ALB controller.
+# Yes, you can do this but it has bigger cost implications i.e if tomorrow You want to expose another service at cluster level,
+# then it will result in the creation of another LoadBalancer which can be avoided using ALB ingress controller ingress which uses
+# only one ALB for all the services. You just need to add the rule in ingress file.
+# 3. Exposing service as the LoadBalancer type require aws permission for creation of security groups. This has the compliant issue with
+# our devops security policies. And there is no option to define already created security group id in the ingresses.
+# Path based routing with ingress
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fanout-nginx-ingress
+  namespace: piyush-poc # Ingress namespace should be same as namespace of the backend services e.g mymemebootservice defined below.
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  labels:
+    app: fanout-nginx-ingress
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /memeboot/(.+)
+        backend:
+          serviceName: mymemebootservice
+          servicePort: 9999
+      - path: /memebootservice/(.+)
+        backend:
+          serviceName: mymemebootservice
+          servicePort: 9999

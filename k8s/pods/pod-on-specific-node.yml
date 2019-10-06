@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-busybox-pod-8
+  labels:
+    app: my-busybox-label-8
+    tutorial: pod-tutorial-8
+
+spec:
+  containers:
+    - name: my-busybox-container-8
+      image: nginx
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+  restartPolicy: Never
+  nodeSelector:
+    name: minikube

@@ -1,0 +1,46 @@
+---
+# Source: mychart/templates/configmap-example.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: RELEASE-NAME-configmap
+  labels:
+    chart-name: mychart-0.1.0
+    template-name: "mychart/templates/configmap-example.yaml"
+    template-path: "mychart/templates"
+data:
+  myvalue: "Hello World"
+  drink: "coffee" # without spaces also works
+  food: "PIZZA"
+  mug: true
+  cloths: shirt
+  drink2: release-name-mychart-tea
+  glass: true
+  isClothPresent:
+    shirt: true
+  toppings: |- # here I have used pipeline |- coz config map key values can only be string so pipeline operator defines string literal block. If list is defined, it will convert to string with newline char.
+    - Mushrooms
+    - Cheese
+    - Peppers
+    - Onions
+    - oragano
+    - pepper
+    - chilies
+    # defining this since inside with block you have local scope, there wont be scope to Release object which is built-in object. # with is like if block with a difference that you can define the local scope and then you dont need to prefix the object used inside it e.g .favorite is omitted in below lines.
+  drink: "coffee"
+  food: "PIZZA"
+  release: release-name
+  drink: Coffee
+  food: Pizza
+
+arbitary-data:
+  generator: helm
+  date: 2019-08-24
+  chart: mychart
+  version: 0.1.0
+
+  arbitary-data2:
+    generator: helm
+    date: 2019-08-24
+    chart: mychart
+    version: 0.1.0

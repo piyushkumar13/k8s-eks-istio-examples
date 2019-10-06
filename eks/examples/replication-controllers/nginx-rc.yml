@@ -1,0 +1,42 @@
+#---
+## If pod is already existing with the same labels what replication controller is expecting. RC will add this pod to its set.
+#apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: nginx-extra-pods
+#  namespace: piyush-poc
+#  labels:
+#    app: nginx-pod
+#    env: test
+#spec:
+#  containers:
+#    - name: nginx
+#      image: nginx
+#      ports:
+#        - containerPort: 80
+#---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: nginx-rc
+  namespace: piyush-poc
+  labels:
+    app: nginx-example
+    env: test
+spec:
+  replicas: 3
+  selector: # This field is optional. This should match the template labels i.e pods label. If selector is unspecified, it will default to .spec.template.metadata.labels
+    app: nginx-pod
+  template:
+    metadata:
+      name: nginx
+      labels:
+        app: nginx-pod
+        env: test
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: IfNotPresent # By default image pull policy was coming as Always.
+        ports:
+        - containerPort: 80

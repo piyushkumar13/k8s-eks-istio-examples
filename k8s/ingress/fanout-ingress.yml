@@ -1,0 +1,53 @@
+#---
+# Ingress basic
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: ingress-nucleus
+#spec:
+#  backend:
+#    serviceName: mymemebootservice
+#    servicePort: 9999
+#---
+# Path based routing with ingress
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: fanout-ingress-nucleus-path-routing
+#  annotations:
+#    nginx.ingress.kubernetes.io/rewrite-target: /$1
+#    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#spec:
+#  rules:
+#  - http:
+#      paths:
+#      - path: /memeboot/(.+)
+#        backend:
+#          serviceName: mymemebootservice
+#          servicePort: 9999
+#      - path: /memebootservice/(.+)
+#        backend:
+#          serviceName: mymemebootservice
+#          servicePort: 9999
+---
+# Host based routing with ingress
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fanout-ingress-nucleus-host-routing
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1 # Putting /$1 instead of just / was introduced in nginx controller 0.22.0 onwards.
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: nucleus.eks.info
+    http:
+      paths:
+      - path: /memeboot/(.+)
+        backend:
+          serviceName: mymemebootservice
+          servicePort: 9999
+      - path: /memebootservice/(.+)
+        backend:
+          serviceName: mymemebootservice
+          servicePort: 9999

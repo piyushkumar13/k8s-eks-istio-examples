@@ -1,0 +1,38 @@
+---
+# Source: pods-and-services/templates/4-memebootservice-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: memebootservice-pod
+  namespace: piyush-poc
+  labels:
+    app: memebootservice
+    deployEnvironment: ED
+    product: memeboot
+
+spec:
+  containers:
+    - name: memebootservice-container
+      image: docker-nucleus.getgotools.net/memeboot/memebootservice:eks-poc
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+      env:
+        - name: AWS_REGION
+          value: us-west-2
+        - name: PRODUCT_NAME
+          value: memeboot
+        - name: SERVICE_NAME
+          value: memebootservice
+        - name: MICROSERVICE_ENV
+          value: ED
+        - name: APP_PORT
+          value: "9999"
+        - name: AWS_ACCESS_KEY_ID
+          value: <something> # provide memeboot aws access key.
+        - name: AWS_SECRET_ACCESS_KEY
+          value: <something> # provide memeboot aws secret key.
+#        - name: SERVICE2_HOST
+#          value: localhost # use localhost for container to container communication. Ex - side car pattern.
+        - name: SERVICE2_PATH
+          value: "/hello"
+  restartPolicy: Never

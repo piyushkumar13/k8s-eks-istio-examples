@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-busybox-pod-1
+  # namespace: piyush-tutorials  # If you want to provide namespace, you need to create the namespace first using command kubectl create namespace piyush-tutorials
+  labels:
+    app: my-busybox-label-1
+    tutorial: pod-tutorial-1
+
+spec:
+  containers:
+    - name: my-busybox-container-1
+      image: busybox
+      command: ['sh', '-c', 'echo Hello Kubernetes!']

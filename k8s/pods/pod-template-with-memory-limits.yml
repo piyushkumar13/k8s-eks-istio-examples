@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-busybox-pod-3
+  labels:
+    app: my-busybox-label-3
+    tutorial: pod-tutorial-3
+
+spec:
+  containers:
+    - name: my-busybox-container-3
+      image: busybox
+      resources:
+        requests:
+          memory: "50Mi"
+        limits:
+          memory: "100Mi"
+      command: ["df"]
+      args: ["-hm"]

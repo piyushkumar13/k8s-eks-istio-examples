@@ -1,0 +1,61 @@
+---
+# Deployments are nomally preferred over ReplicaSet or ReplicationController due to following reasons : (https://kubernetes.io/docs/concepts/workloads/controllers/replicaset/#alternatives-to-replicaset)
+# It provide support for :
+# Performing rolling updates in much elegant way.
+# You can perform rollback to deployments.
+# You can pause/resume deployment.
+# It maintains history of deployment updates(revision).
+# For more details on use-cases, you can refer here : https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#use-case
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deployment-test
+  labels:
+    app: deployment-test
+    env: test
+spec:
+  replicas: 3
+  selector:
+    matchLabels: # This is optional. matchLabels must contain the same labels as that of pod defined in template.metadata.labels. Note : It cannot match with the pod name.
+      app: deployment-example
+      env: test
+  strategy: # This is optional. strategy.type can be “Recreate” or “RollingUpdate”. “RollingUpdate” is the default value.
+            # For more info refer here : https://kubernetes.io/docs/concepts/workloads/controllers/deployment/#strategy
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      name: deployment-pod
+      labels:
+        app: deployment-example
+        env: test
+    spec:
+      containers:
+      - name: deployment-example-container
+        image: piyushkumar13/pluralsight-docker-ci:edge # For rolling update to different image, you can use piyushkumar13/pluralsight-docker-ci:latest
+                                                        # It is available here : https://cloud.docker.com/u/piyushkumar13/repository/docker/piyushkumar13/pluralsight-docker-ci
+        imagePullPolicy: IfNotPresent # By default image pull policy was coming as Always.
+        ports:
+        - containerPort: 8080
+---
+# The way service is created for deployment similarly it can be created for the ReplicaSet or ReplicationController. Coz eventually
+# Services are over the pods not on the deployment, ReplicaSet etc. Pods are selected based on their labels.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mydeploymentservice
+  labels:
+    fordeployment: deployment-test
+    env: test
+spec:
+  selector:
+    app: deployment-example # selector should always use the pods labels not the deployment labels
+                            # even if service is intent to be created over deployment. Same holds true for replicaset and replica controller.
+  type: NodePort # Exposes the services externally.
+  ports:
+    - protocol: TCP
+      port: 9999
+      targetPort: 8080
+      nodePort: 31001

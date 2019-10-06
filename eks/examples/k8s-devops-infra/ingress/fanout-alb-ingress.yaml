@@ -1,0 +1,30 @@
+---
+# This ingress uses the AWS alb-ingress-controller. Please make sure to deploy alb-ingress-controller before creating
+# this ingress. You can deploy the alb-ingress-controller by running yaml files in examples/ingress-controllers/aws-controller/.
+# Ex - kubectl apply -f <path>/examples/ingress-controllers/aws-controller/
+# ALB ingresses have some disadvantages. Among all the main one is : it does not provide proxy_pass and reverse proxy feature.
+# To achieve this feature with ALB ingress, I have created a hybrid solution which using ALB Ingress Controller + Nginx Ingress Controller
+# as described in examples/ingress/fanout-hybrid-ingress.yaml. Note that nginx-controller ingresses provides proxy_pass and reverse_proxy
+# features.
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fanout-alb-ingress
+  namespace: nucleus-development # Ingress namespace should be same as namespace of the backend services e.g mymemebootservice defined below.
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]' # You can also use like this '[{"HTTP": 80, "HTTPS": 443}]' if ops certificate is compatible with your domain name.
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/security-groups: 10x
+  labels:
+    app: fanout-alb-ingress
+spec:
+  rules:
+    - host: myservice.k8s.dev.goto-rtc.com # only *.k8s.dev.goto-rtc.com hosts are supported
+      http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: "mymemebootservice"
+              servicePort: 9999

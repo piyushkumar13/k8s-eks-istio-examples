@@ -1,0 +1,22 @@
+---
+# This ingress points to the istio-ingress-controller i.e istio-ingressgateway. This gateway can act as the alternative to nginx-ingress-controller.
+# This way we are combining the capability of alb-controller ingresses + istio-ingressgateway.
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fanout-hybrid-ing-for-istio-gw
+  namespace: istio-system # Ingress namespace should be same as namespace of the backend services e.g mymemebootservice defined below.
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/security-groups: sg-1251f26b
+  labels:
+    app: fanout-hybrid-ing-for-istio-gw
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: istio-ingressgateway
+              servicePort: 80

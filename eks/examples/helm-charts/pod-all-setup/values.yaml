@@ -1,0 +1,20 @@
+product:
+  name: piyush-poc
+  deployEnvironment: ED
+  applications:
+    - name: reorgservice
+      image: docker-nucleus.getgotools.net/memeboot/reorg-test-service:eks-poc
+      deployRegion: us-west-2
+      appPort: 9998
+      serviceName: service2
+      servicePort: 9998
+
+    - name: memebootservice
+      image: docker-nucleus.getgotools.net/memeboot/memebootservice:eks-poc
+      deployRegion: us-west-2
+      appPort: 9999
+      awsAccessKey: <something>
+      awsSecretKey: <something>
+      serviceName: mymemebootservice
+      servicePort: 9999
+      nodePort: 31001

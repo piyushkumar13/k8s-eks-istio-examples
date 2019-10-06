@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-busybox-pod-6
+  labels:
+    app: my-busybox-label-6
+    tutorial: pod-tutorial-6
+
+spec:
+  containers:
+    - name: my-busybox-container-6
+      image: busybox
+      resources:
+        requests:
+          cpu: "0.5"
+          memory: "256Mi"
+        limits:
+          cpu: "1"
+          memory: "512Mi"
+      command: ["echo"]
+      args: ["cpus and memories are assigned"]
+  restartPolicy: Never

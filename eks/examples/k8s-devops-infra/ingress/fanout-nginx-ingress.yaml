@@ -1,0 +1,21 @@
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fanout-nginx-ingress
+  namespace: nucleus-development # Ingress namespace should be same as namespace of the backend services e.g mymemebootservice defined below.
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  labels:
+    app: fanout-nginx-ingress
+spec:
+  rules:
+  - host: myservice.k8s.dev.goto-rtc.com # only *.k8s.dev.goto-rtc.com hosts are supported
+    http:
+      paths:
+      - path: /memebootservice/(.+)
+        backend:
+          serviceName: mymemebootservice
+          servicePort: 9999

@@ -1,0 +1,20 @@
+---
+# Source: pods-and-services/templates/3-service-for-reorgservice.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: service2 # The name is very important for service discovery.
+  namespace: piyush-poc
+  labels:
+    forapp: reorgservice
+    product: memeboot
+    deployEnvironment: ED
+spec:
+  selector:
+    app: reorgservice
+  type: ClusterIP # By default service is of type ClusterIP. Just for understanding of new developer added this value.
+  ports:
+    - protocol: TCP
+      port: 9998
+      targetPort: 9998

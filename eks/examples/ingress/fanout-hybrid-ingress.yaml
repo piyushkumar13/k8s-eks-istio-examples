@@ -1,0 +1,24 @@
+---
+# This ingress points to the nginx-controller whereas nginx-controller ingresses will be pointing to enduser backend services.
+# This way we are combining the capability of alb-controller ingresses + nginx controller ingresses.
+# Basically, have implemented the solution provided here : https://medium.com/@dmaas/amazon-eks-ingress-guide-8ec2ec940a70
+# (search for A working compromise: alb-ingress-controller + Nginx in this link)
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fanout-hybrid-ingress
+  namespace: ingress-nginx # Ingress namespace should be same as namespace of the backend services e.g mymemebootservice defined below.
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internal
+    alb.ingress.kubernetes.io/security-groups: sg-1251f26b
+  labels:
+    app: fanout-hybrid-ingress
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /*
+            backend:
+              serviceName: ingress-nginx
+              servicePort: 80

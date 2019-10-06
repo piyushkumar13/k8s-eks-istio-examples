@@ -1,0 +1,8 @@
+---
+# Source: mychart/charts/mysubchart/templates/configmap-sub-example.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: release-name-cfgmap2
+data:
+  dessert: rosogula

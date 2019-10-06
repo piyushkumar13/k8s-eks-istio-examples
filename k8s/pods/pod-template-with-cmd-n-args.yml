@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-busybox-pod-2
+  labels:
+    app: my-busybox-label-2
+    tutorial: pod-tutorial-2
+
+spec:
+  containers:
+    - name: my-busybox-container-2
+      image: busybox
+      command: ["echo"]
+      args: ["Hello to K8s examples"]

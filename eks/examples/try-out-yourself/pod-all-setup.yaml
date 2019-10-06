@@ -1,0 +1,55 @@
+# NOTE : This example is taken from ./pods/pod-all-setup.yml with some modification
+---
+# Namespace is the logical segregation of the spaces. This can be useful for segregating the nucleus products.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: <provide name>
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: reorgservice-pod
+  namespace: <provide name>
+  labels:
+    app: reorgservice
+    deployEnvironment: ED
+    product: memeboot
+
+spec:
+  containers:
+    - name: reorgservice-container
+      image: docker-nucleus.getgotools.net/memeboot/reorg-test-service:eks-poc
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+      env:
+        - name: AWS_REGION
+          value: us-west-2
+        - name: PRODUCT_NAME
+          value: memeboot
+        - name: SERVICE_NAME
+          value: reorgservice
+        - name: MICROSERVICE_ENV
+          value: ED
+        - name: APP_PORT
+          value: "9998"
+  restartPolicy: Never
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service2
+  namespace: <provide name>
+  labels:
+    forapp: reorgservice
+    product: memeboot
+    deployEnvironment: ED
+spec:
+  selector:
+    app: reorgservice
+  type: NodePort # By using NodePort, the service will be accessible outside of the cluster by using NodeIp:NodePort
+  ports:
+    - protocol: TCP
+      port: 9998
+      targetPort: 9998
+      nodePort: 31111

@@ -1,0 +1,57 @@
+# This example is for running in minikube. Please follow below steps.
+# 1. Create services using template here : ./examples/pods/pod-all-setup.yml
+# 2. Run command minikube addons enable ingress. This will enable nginx-controller which comes packaged with minikube.
+# 3. Run the following yaml template using kubectl command.
+#---
+# Ingress basic
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: simple-minikube-ingress
+#spec:
+#  backend:
+#    serviceName: mymemebootservice
+#    servicePort: 9999
+#---
+# Path based routing with ingress
+#apiVersion: extensions/v1beta1
+#kind: Ingress
+#metadata:
+#  name: fanout-minikube-ingress-path-routing
+#  annotations:
+#    nginx.ingress.kubernetes.io/rewrite-target: /$1
+#    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#spec:
+#  rules:
+#  - http:
+#      paths:
+#      - path: /memeboot/(.+)
+#        backend:
+#          serviceName: mymemebootservice
+#          servicePort: 9999
+#      - path: /memebootservice/(.+)
+#        backend:
+#          serviceName: mymemebootservice
+#          servicePort: 9999
+---
+# Host based routing with ingress
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: fanout-minikube-ingress-host-routing
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  rules:
+  - host: nucleus.eks.info
+    http:
+      paths:
+      - path: /memeboot/(.+)
+        backend:
+          serviceName: mymemebootservice
+          servicePort: 9999
+      - path: /memebootservice/(.+)
+        backend:
+          serviceName: mymemebootservice
+          servicePort: 9999

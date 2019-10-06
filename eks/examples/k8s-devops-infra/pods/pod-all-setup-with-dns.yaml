@@ -1,0 +1,125 @@
+---
+# Namespace is the logical segregation of the spaces. This can be useful for segregating the nucleus products.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nucleus-development
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: reorgservice-pod-with-dns
+  namespace: nucleus-development
+  labels:
+    app: reorgservice-with-dns
+    deployEnvironment: ED
+    product: memeboot-with-dns
+
+spec:
+  containers:
+    - name: reorgservice-container-with-dns
+      image: docker-nucleus.getgotools.net/memeboot/reorg-test-service:eks-poc
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+      resources:
+        requests:
+          cpu: 512m # This is required by hpa. To see the autosaling change it to 512m
+          memory: 512Mi
+        limits:
+          cpu: 512m
+          memory: 1024Mi
+      env:
+        - name: AWS_REGION
+          value: us-west-2
+        - name: PRODUCT_NAME
+          value: memeboot
+        - name: SERVICE_NAME
+          value: reorgservice
+        - name: MICROSERVICE_ENV
+          value: ED
+        - name: APP_PORT
+          value: "9998"
+  restartPolicy: Never
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service2-with-dns # The name is very important for service discovery.
+  namespace: nucleus-development
+  labels:
+    forapp: reorgservice-with-dns
+    product: memeboot-with-dns
+    deployEnvironment: ED
+spec:
+  selector:
+    app: reorgservice-with-dns
+  type: ClusterIP # By default service is of type ClusterIP. Just for understanding of new developer added this value.
+  ports:
+    - protocol: TCP
+      port: 9998
+      targetPort: 9998
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: memebootservice-pod-with-dns
+  namespace: nucleus-development
+  labels:
+    app: memebootservice-with-dns
+    deployEnvironment: ED
+    product: memeboot-with-dns
+
+spec:
+  containers:
+    - name: memebootservice-container-with-dns
+      image: docker-nucleus.getgotools.net/memeboot/memebootservice:eks-poc
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+      resources:
+        requests:
+          cpu: 512m # This is required by hpa. To see the autosaling change it to 512m
+          memory: 512Mi
+        limits:
+          cpu: 512m
+          memory: 1024Mi
+      env:
+        - name: AWS_REGION
+          value: us-west-2
+        - name: PRODUCT_NAME
+          value: memeboot
+        - name: SERVICE_NAME
+          value: memebootservice
+        - name: MICROSERVICE_ENV
+          value: ED
+        - name: APP_PORT
+          value: "9999"
+        - name: AWS_ACCESS_KEY_ID
+          value: <something> # provide memeboot aws access key.
+        - name: AWS_SECRET_ACCESS_KEY
+          value: <something> # provide memeboot aws secret key.
+#        - name: SERVICE2_HOST
+#          value: localhost # use localhost for container to container communication. Ex - side car pattern.
+        - name: SERVICE2_PATH
+          value: "/hello"
+  restartPolicy: Never
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mymemebootservice-with-dns # The name is very important for service discovery.
+  namespace: nucleus-development
+  labels:
+    forapp: memebootservice-with-dns
+    product: memeboot-with-dns
+    deployEnvironment: ED
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: mymemebootservice.k8s.dev.goto-rtc.com
+spec:
+  selector:
+    app: memebootservice-with-dns
+  clusterIP: None
+  ports:
+    - protocol: TCP
+      port: 9999
+      targetPort: 9999

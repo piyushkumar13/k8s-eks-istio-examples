@@ -1,0 +1,206 @@
+# Run this file using cmd : kubectl apply -f <(istioctl kube-inject -f 2-service-discovery.yaml)
+# Access the api : http://${INGRESS_HOST}:${INGRESS_PORT}/memebootservice/eks/hello - this endpoint talks to reorgservice also.
+---
+# Namespace is the logical segregation of the spaces. This can be useful for segregating the nucleus products.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: piyush-poc
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reorgservice-deployment-v1
+  namespace: piyush-poc
+  labels:
+    app: reorgservice-deployment
+    env: ED
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reorgservice-pod
+      deployEnvironment: ED
+      product: memeboot
+      version: v1
+
+  template:
+    metadata:
+      name: reorgservice-pod-v1
+      labels:
+        app: reorgservice-pod
+        deployEnvironment: ED
+        product: memeboot
+        version: v1
+    spec:
+      containers:
+        - name: reorgservice-container-v1
+          image: docker-nucleus.getgotools.net/memeboot/reorg-test-service:eks-poc
+          imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+#          resources:
+#            requests:
+#              cpu: 512m # This is required by hpa. To see the autosaling change it to 512m
+#              memory: 512Mi
+#            limits:
+#              cpu: 512m
+#              memory: 1024Mi
+          env:
+            - name: AWS_REGION
+              value: us-west-2
+            - name: PRODUCT_NAME
+              value: memeboot
+            - name: SERVICE_NAME
+              value: reorgservice
+            - name: MICROSERVICE_ENV
+              value: ED
+            - name: APP_PORT
+              value: "9998"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service2 # The name is very important for service discovery.
+  namespace: piyush-poc
+  labels:
+    forapp: reorgservice
+    product: memeboot
+    deployEnvironment: ED
+spec:
+  selector:
+    app: reorgservice-pod
+  type: ClusterIP # By default service is of type ClusterIP. Just for understanding of new developer added this value.
+  ports:
+    - name: http-service2
+      port: 9998
+      targetPort: 9998
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memebootservice-deployment-v1
+  namespace: piyush-poc
+  labels:
+    app: memebootservice-deployment
+    env: ED
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memebootservice-pod
+      deployEnvironment: ED
+      product: memeboot
+      version: v1
+  template:
+    metadata:
+      name: memebootservice-pod-v1
+      namespace: piyush-poc
+      labels:
+        app: memebootservice-pod
+        deployEnvironment: ED
+        product: memeboot
+        version: v1
+
+    spec:
+      containers:
+        - name: memebootservice-container-v1
+          image: docker-nucleus.getgotools.net/memeboot/memebootservice:eks-poc
+          imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+#          resources:
+#            requests:
+#              cpu: 512m # This is required by hpa. To see the autosaling change it to 512m
+#              memory: 512Mi
+#            limits:
+#              cpu: 512m
+#              memory: 1024Mi
+          env:
+            - name: AWS_REGION
+              value: us-west-2
+            - name: PRODUCT_NAME
+              value: memeboot
+            - name: SERVICE_NAME
+              value: memebootservice
+            - name: MICROSERVICE_ENV
+              value: ED
+            - name: APP_PORT
+              value: "9999"
+            - name: AWS_ACCESS_KEY_ID
+              value: <provide aws access key> # provide memeboot aws access key.
+            - name: AWS_SECRET_ACCESS_KEY
+              value: <provide aws secret key> # provide memeboot aws secret key.
+    #        - name: SERVICE2_HOST
+    #          value: localhost # use localhost for container to container communication. Ex - side car pattern.
+            - name: SERVICE2_PATH
+              value: "/hello"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mymemebootservice # The name is very important for service discovery.
+  namespace: piyush-poc
+  labels:
+    forapp: memebootservice
+    product: memeboot
+    deployEnvironment: ED
+spec:
+  selector:
+    app: memebootservice-pod
+  ports:
+    - name: http-mymemebootservice
+      port: 9999
+      targetPort: 9999
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: common-gateway
+  namespace: piyush-poc
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: mymemebootservice-vs
+  namespace: piyush-poc
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - common-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /memebootservice/
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: mymemebootservice
+            subset: v1
+            port:
+              number: 9999
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: mymemebootservice-dr
+  namespace: piyush-poc
+spec:
+  host: mymemebootservice
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+    - name: v1
+      labels:
+        version: v1

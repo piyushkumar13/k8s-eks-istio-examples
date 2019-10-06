@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-busybox-pod-7
+  labels:
+    app: my-busybox-label-7
+    tutorial: pod-tutorial-7
+
+spec:
+  containers:
+    - name: my-busybox-container-7
+      image: busybox:latest
+      command: ["echo"]
+      args: ["Image pull policy is set"]
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+  restartPolicy: Never

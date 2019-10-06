@@ -1,0 +1,120 @@
+# Fault injection normally used for testing purposes if you artificially introduce some fault behavior in the service.
+# There are two types of behavior we can introduce :
+#  1. Delay.
+#  2. Error response code.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: piyush-poc
+#  labels:
+#    istio-injection: enabled
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp-deployment-v1
+  namespace: piyush-poc
+  labels:
+    app: myapp-deployment
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: myapp-pod
+      version: v1
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      name: myapp-pod-v1
+      labels:
+        app: myapp-pod
+        version: v1
+    spec:
+      containers:
+      - name: myapp-container-v1
+        image: piyushkumar13/pluralsight-docker-ci:edge # outputs with Kubesighter header
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myappservice
+  namespace: piyush-poc
+  labels:
+    forapp: myapp
+    service: myappservice
+spec:
+  selector:
+    app: myapp-pod
+  type: NodePort
+  ports:
+    - name: http-myapp
+      port: 9999
+      targetPort: 8080
+---
+# Gateway selects which ingress-controller to use which will act as the starting point for the request which will get loadbalanced
+# according to the virtualservice and destination rules.
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: myapp-gateway
+  namespace: piyush-poc
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: myapp-vservice
+  namespace: piyush-poc
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - myapp-gateway
+  http:
+  - match:
+    - uri:
+        exact: /myapp
+    rewrite: # Actual request that will go to the underlying application will strip the /myapp path
+      uri: /
+    route:
+    - destination:
+        host: myappservice
+        subset: v1 # Kubesighter
+        port:
+          number: 9999
+    fault: # We can inject faults for testing purposes. This injected fault is abort similarly we can have for delay. Refer this : https://istio.io/docs/tasks/traffic-management/fault-injection/
+      abort:
+        httpStatus: 400
+        percent: 100
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: myapp-dr
+spec:
+  host: myappservice
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+  subsets:
+  - name: v1
+    labels:
+      version: v1

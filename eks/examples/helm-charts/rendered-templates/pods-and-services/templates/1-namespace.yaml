@@ -1,0 +1,8 @@
+---
+# Source: pods-and-services/templates/1-namespace.yaml
+
+# Namespace is the logical segregation of the spaces. This can be useful for segregating the nucleus products.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: piyush-poc

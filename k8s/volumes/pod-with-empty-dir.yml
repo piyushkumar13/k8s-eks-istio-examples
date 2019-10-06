@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata: 
+  name: pod-with-empty-dir
+spec:
+  containers:
+    - name: pod-with-empty-dir-con
+      image: nginx
+      imagePullPolicy: IfNotPresent
+      # command: ["echo"]
+      # args: ["this is empty dir vol example"]
+      volumeMounts: 
+        - name: empty-dir-vol
+          mountPath: /mydata
+  volumes: 
+    - name: empty-dir-vol
+      emptyDir: {}

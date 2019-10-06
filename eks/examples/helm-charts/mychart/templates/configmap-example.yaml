@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name | upper }}-configmap
+  labels:
+    chart-name: {{ .Chart.Name }}-{{ .Chart.Version}}
+    template-name: {{ quote .Template.Name }}
+    template-path: {{ quote .Template.BasePath }}
+data:
+  myvalue: "Hello World"
+  drink: {{.Values.favorite.drink | default "tea" | quote}} # without spaces also works
+  food: {{ .Values.favorite.food | upper | quote }}
+  {{ if and .Values.favorite.drink (eq .Values.favorite.drink "coffee") }}mug: true{{ end }}
+  cloths: {{ .Values.favorite.cloths | default "shirt" }}
+  drink2: {{ .Values.favorite.drink2 | default (printf "%s-tea" (include "mychart.fullname" .)) }}
+  {{ if and .Values.favorite.drink (eq .Values.favorite.drink "coffee") -}}
+  glass: true
+  {{ end -}}
+  isClothPresent:
+  {{ indent 2 "shirt: true" }}
+  toppings: |- # here I have used pipeline |- coz config map key values can only be string so pipeline operator defines string literal block. If list is defined, it will convert to string with newline char.
+    {{- range .Values.pizzaToppings }}
+    - {{ . | title }}
+    {{- end}}
+    {{- range list "oragano" "pepper" "chilies" }}
+    - {{ . }}
+    {{- end }}
+  {{ $relname := .Release.Name }}  # defining this since inside with block you have local scope, there wont be scope to Release object which is built-in object.
+  {{- with .Values.favorite }} # with is like if block with a difference that you can define the local scope and then you dont need to prefix the object used inside it e.g .favorite is omitted in below lines.
+  drink: {{ .drink | default "tea" | quote }}
+  food: {{ .food | upper | quote }}
+  release: {{ $relname }}
+  {{- end }}
+
+  {{- range $key, $value := .Values.favorite }}
+  {{ $key }}: {{ $value | title }}
+  {{- end }}
+
+{{ template "mychart.mylabels" . }}
+{{ include "mychart.mylabels2" . | nindent 2 }}

@@ -1,0 +1,13 @@
+favorite:
+  drink: coffee
+  food: pizza
+
+pizzaToppings:
+  - mushrooms
+  - cheese
+  - peppers
+  - onions
+
+
+mysubchart: # We can use the parent values.yml file for subchart as well as we can create subchart values.yml as well.
+  dessert: rosogula

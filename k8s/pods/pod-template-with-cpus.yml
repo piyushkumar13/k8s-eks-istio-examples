@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: my-busybox-pod-5
+  labels:
+    app: my-busybox-label-5
+    tutorial: pod-tutorial-5
+
+spec:
+  containers:
+    - name: my-busybox-container-5
+      image: busybox
+      resources:
+        requests:
+          cpu: "0.5"
+        limits:
+          cpu: "1"
+      command: ["echo"]
+      args: ["cpus are assigned"]

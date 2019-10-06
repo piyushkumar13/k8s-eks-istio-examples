@@ -1,0 +1,21 @@
+---
+# Source: pods-and-services/templates/5-service-for-memebootservice.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: mymemebootservice # The name is very important for service discovery.
+  namespace: piyush-poc
+  labels:
+    forapp: memebootservice
+    product: memeboot
+    deployEnvironment: ED
+spec:
+  selector:
+    app: memebootservice
+  type: NodePort # Exposes the services externally.
+  ports:
+    - protocol: TCP
+      port: 9999
+      targetPort: 9999
+      nodePort: 31001

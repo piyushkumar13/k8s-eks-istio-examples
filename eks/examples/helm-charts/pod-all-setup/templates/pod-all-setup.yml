@@ -1,0 +1,110 @@
+
+# Namespace is the logical segregation of the spaces. This can be useful for segregating the nucleus products.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Values.product.name }}
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ (index .Values.product.applications 0).name }}-pod
+  namespace: {{ .Values.product.name }}
+  labels:
+    app: {{ (index .Values.product.applications 0).name }}
+    deployEnvironment: {{ .Values.product.deployEnvironment | upper }}
+    product: memeboot
+
+spec:
+  containers:
+    - name: {{ (index .Values.product.applications 0).name }}-container
+      image: {{ (index .Values.product.applications 0).image }}
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+      env:
+        - name: AWS_REGION
+          value: {{ (index .Values.product.applications 0).deployRegion }}
+        - name: PRODUCT_NAME
+          value: memeboot
+        - name: SERVICE_NAME
+          value: {{ (index .Values.product.applications 0).name }}
+        - name: MICROSERVICE_ENV
+          value: {{ .Values.product.deployEnvironment | upper }}
+        - name: APP_PORT
+          value: {{ (index .Values.product.applications 0).appPort | quote }}
+  restartPolicy: Never
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ (index .Values.product.applications 0).serviceName }} # The name is very important for service discovery.
+  namespace: {{ .Values.product.name }}
+  labels:
+    forapp: {{ (index .Values.product.applications 0).name }}
+    product: memeboot
+    deployEnvironment: {{ .Values.product.deployEnvironment | upper }}
+spec:
+  selector:
+    app: {{ (index .Values.product.applications 0).name }}
+  type: ClusterIP # By default service is of type ClusterIP. Just for understanding of new developer added this value.
+  ports:
+    - protocol: TCP
+      port: {{ (index .Values.product.applications 0).servicePort }}
+      targetPort: {{ (index .Values.product.applications 0).appPort }}
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ (index .Values.product.applications 1).name }}-pod
+  namespace: {{ .Values.product.name }}
+  labels:
+    app: {{ (index .Values.product.applications 1).name }}
+    deployEnvironment: {{ .Values.product.deployEnvironment | upper }}
+    product: memeboot
+
+spec:
+  containers:
+    - name: {{ (index .Values.product.applications 1).name }}-container
+      image: {{ (index .Values.product.applications 1).image }}
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+      env:
+        - name: AWS_REGION
+          value: {{ (index .Values.product.applications 1).deployRegion }}
+        - name: PRODUCT_NAME
+          value: memeboot
+        - name: SERVICE_NAME
+          value: {{ (index .Values.product.applications 1).name }}
+        - name: MICROSERVICE_ENV
+          value: {{ .Values.product.deployEnvironment | upper }}
+        - name: APP_PORT
+          value: {{ (index .Values.product.applications 1).appPort | quote }}
+        - name: AWS_ACCESS_KEY_ID
+          value: {{ (index .Values.product.applications 1).awsAccessKey }} # provide memeboot aws access key.
+        - name: AWS_SECRET_ACCESS_KEY
+          value: {{ (index .Values.product.applications 1).awsSecretKey }} # provide memeboot aws secret key.
+#        - name: SERVICE2_HOST
+#          value: localhost # use localhost for container to container communication. Ex - side car pattern.
+        - name: SERVICE2_PATH
+          value: "/hello"
+  restartPolicy: Never
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ (index .Values.product.applications 1).serviceName }} # The name is very important for service discovery.
+  namespace: {{ .Values.product.name }}
+  labels:
+    forapp: {{ (index .Values.product.applications 1).name }}
+    product: memeboot
+    deployEnvironment: {{ .Values.product.deployEnvironment | upper }}
+spec:
+  selector:
+    app: {{ (index .Values.product.applications 1).name }}
+  type: NodePort # Exposes the services externally.
+  ports:
+    - protocol: TCP
+      port: {{ (index .Values.product.applications 1).servicePort }}
+      targetPort: {{ (index .Values.product.applications 1).appPort }}
+      nodePort: {{ (index .Values.product.applications 1).nodePort }}

@@ -1,0 +1,84 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reorg-hpa-deployment
+  namespace: piyush-poc
+  labels:
+    app: reorg-hpa-deployment
+    env: test
+spec:
+  replicas: 2
+  selector:
+    matchLabels: # This is optional. matchLabels must contain the same labels as that of pod defined in template.metadata.labels. Note : It cannot match with the pod name.
+      app: reorg-hpa-example
+      env: test
+  template:
+    metadata:
+      name: reorg-hpa-pod
+      labels:
+        app: reorg-hpa-example
+        env: test
+    spec:
+      containers:
+      - name: reorg-hpa-example-container
+        image: docker-nucleus.getgotools.net/memeboot/reorg-test-service:eks-poc
+        imagePullPolicy: IfNotPresent # By default image pull policy was coming as Always.
+        resources:
+          requests:
+            cpu: 512m # This is required by hpa. To see the autosaling change it to 512m
+            memory: 512Mi
+          limits:
+            cpu: 512m
+            memory: 1024Mi
+        env:
+          - name: AWS_REGION
+            value: us-west-2
+          - name: PRODUCT_NAME
+            value: memeboot
+          - name: SERVICE_NAME
+            value: reorgservice
+          - name: MICROSERVICE_ENV
+            value: ED
+          - name: APP_PORT
+            value: "9998"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reorghpaservice
+  namespace: piyush-poc
+  labels:
+    fordeployment: reorg-hpa-deployment
+    env: test
+spec:
+  selector:
+    app: reorg-hpa-example
+  type: NodePort # Exposes the services externally.
+  ports:
+    - protocol: TCP
+      port: 9998
+      targetPort: 9998
+      nodePort: 31003
+---
+# Pre-requisite : For HPA to work, you need to install the metrics-server in EKS which is similar to heapster in k8s cluster.
+# https://docs.aws.amazon.com/eks/latest/userguide/metrics-server.html . There seems to be some issue with yamls aws provided.
+# Please follow what I have added in the examples/horizontal-pod-autoscaler/metrics-server directory. The issue I was able to resolve
+# using following links :
+# https://github.com/kubernetes-incubator/metrics-server/issues/129#issuecomment-420411264
+# https://stackoverflow.com/a/56557663/5527839
+# https://github.com/awslabs/amazon-eks-ami/issues/55#issuecomment-430185199
+# https://github.com/kubernetes-incubator/metrics-server/issues/45#issuecomment-421345121
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: reorg-deployment-hpa
+  namespace: piyush-poc
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: reorg-hpa-deployment
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 50

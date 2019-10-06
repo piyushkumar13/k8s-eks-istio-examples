@@ -1,0 +1,28 @@
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ (index .Values.product.applications 0).name }}-pod
+  namespace: {{ .Values.product.name }}
+  labels:
+    app: {{ (index .Values.product.applications 0).name }}
+    deployEnvironment: {{ .Values.product.deployEnvironment | upper }}
+    product: memeboot
+
+spec:
+  containers:
+    - name: {{ (index .Values.product.applications 0).name }}-container
+      image: {{ (index .Values.product.applications 0).image }}
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+      env:
+        - name: AWS_REGION
+          value: {{ (index .Values.product.applications 0).deployRegion }}
+        - name: PRODUCT_NAME
+          value: memeboot
+        - name: SERVICE_NAME
+          value: {{ (index .Values.product.applications 0).name }}
+        - name: MICROSERVICE_ENV
+          value: {{ .Values.product.deployEnvironment | upper }}
+        - name: APP_PORT
+          value: {{ (index .Values.product.applications 0).appPort | quote }}
+  restartPolicy: Never

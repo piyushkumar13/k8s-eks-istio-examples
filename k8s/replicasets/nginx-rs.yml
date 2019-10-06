@@ -1,0 +1,46 @@
+#---
+## If pod is already existing with the same labels what ReplicaSet is expecting. RS will add this pod to its set.
+#apiVersion: v1
+#kind: Pod
+#metadata:
+#  name: nginx-extra-pods
+#  labels:
+#    app: nginx-pod
+#    env: test
+#spec:
+#  containers:
+#    - name: nginx
+#      image: nginx
+#      ports:
+#        - containerPort: 80
+---
+# ReplicaSet is similar to replication controller except one difference i.e in ReplicaSet we can use set based equality in selectors.
+# Refer this : https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#label-selectors
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-rs
+  labels:
+    app: nginx-example
+    env: test
+spec:
+  replicas: 3
+  selector: # This field is optional. This should match the template labels i.e pods label. If selector is unspecified, it will default to .spec.template.metadata.labels
+    matchLabels:
+      app: nginx-pod
+    matchExpressions: # This is optional field.
+      - {key: env, operator: In, values: [test]} # Set based equality. Good read for label selectors : https://medium.com/mayadata/kubernetes-label-selector-and-field-selector-81d6967bb2f
+  template:
+    metadata:
+      name: nginx
+      labels:
+        app: nginx-pod
+        env: test
+    spec:
+      containers:
+      - name: nginx
+        image: nginx
+        imagePullPolicy: IfNotPresent # By default image pull policy was coming as Always.
+        ports:
+        - containerPort: 80
+

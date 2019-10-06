@@ -1,0 +1,30 @@
+---
+# Source: pods-and-services/templates/2-reorgservice-pod.yaml
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: reorgservice-pod
+  namespace: piyush-poc
+  labels:
+    app: reorgservice
+    deployEnvironment: ED
+    product: memeboot
+
+spec:
+  containers:
+    - name: reorgservice-container
+      image: docker-nucleus.getgotools.net/memeboot/reorg-test-service:eks-poc
+      imagePullPolicy: IfNotPresent # It can have possible values as Never, Always and IfNotPresent
+      env:
+        - name: AWS_REGION
+          value: us-west-2
+        - name: PRODUCT_NAME
+          value: memeboot
+        - name: SERVICE_NAME
+          value: reorgservice
+        - name: MICROSERVICE_ENV
+          value: ED
+        - name: APP_PORT
+          value: "9998"
+  restartPolicy: Never
